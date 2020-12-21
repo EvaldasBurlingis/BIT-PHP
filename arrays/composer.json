@@ -1,0 +1,7 @@
+{
+    "name": "evaldas/php03_arrays",
+    "require-dev": {
+        "codedungeon/php-cli-colors": "^1.12"
+    },
+    "require": {}
+}

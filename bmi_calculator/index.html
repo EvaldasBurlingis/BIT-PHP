@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"> 
+    <title>KMI skaičiuoklė</title>
+    <style>
+        .main-font {
+            font-family: 'Open Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-r from-yellow-300 to-yellow-400  main-font pb-16">
+
+    <main class="container mx-auto pt-8">
+        <div class="w-full h-full mb-4">
+            <h2 class="text-black mb-4 text-lg font-bold tracking-tight">Būtina užpildyti visus laukelius</h2>
+            <form class="grid gap-4 grid-cols-3" id="form">
+                <div 
+                    class="border-4 border-white rounded-lg p-8 w-full col-start-1 col-span-2 row-start-1 row-span-3" 
+                    x-data="{ gender: '' }">
+                    <h3 class="mb-2 text-sm font-semibold">Pasirinkite lytį:</h3>
+                    <div class="col-start-1 row-start-1 grid gap-4 grid-cols-2">
+                        <div 
+                            class="border-4 border-white rounded-lg hover:border-yellow-600 hover:opacity-100 cursor-pointer" 
+                            :class="{ 'opacity-25': gender === 'female' }" 
+                            onclick="setGender('male')" 
+                            @click="gender = 'male'">
+                            <img src="https://assets.website-files.com/5e51c674258ffe10d286d30a/5e535c42c67e79a7a6962d19_peep-91.svg" alt="" class="mx-auto">
+                        </div>
+                        <div 
+                            class="border-4 border-white rounded-lg hover:border-yellow-600 cursor-pointer hover:opacity-100" 
+                            :class="{ 'opacity-25': gender === 'male' }" 
+                            onclick="setGender('female')" 
+                            @click="gender = 'female'">
+                            <img src="https://assets.website-files.com/5e51c674258ffe10d286d30a/5e535b3ad399233aa855d221_peep-82.svg" alt="" class="mx-auto">
+                        </div>
+                    </div>
+                </div>
+                <div class="border-4 border-white rounded-lg px-8 w-full row-start-1 flex items-center">
+                    <div class="flex items-center w-full">
+                        <label class="text-sm font-semibold mr-4 w-32" for="ageInput">Jūsų amžius:</label>
+                        <input class="px-4 py-2 rounded-lg flex-1" type="number" name="age" id="ageInput" required>
+                    </div>
+                </div>
+                <div class="border-4 border-white rounded-lg px-8 w-full row-start-2 flex items-center">
+                    <div class="flex items-center w-full">
+                        <label class="text-sm font-semibold mr-4 w-32" for="weightInput">Jūsų svoris (kg):</label>
+                        <input type="number" name="weight" id="weightInput" class="px-4 py-2 rounded-lg flex-1" required>
+                    </div>
+                </div>
+                <div class="border-4 border-white rounded-lg px-8 w-full row-start-3 flex items-center">
+                    <div class="flex items-center w-full">
+                        <label class="text-sm font-semibold mr-4 w-32" for="heightInput">Jūsų ūgis (cm):</label>
+                        <input type="number" name="height" id="heightInput" class="px-4 py-2 rounded-lg flex-1" required>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <button 
+            type="submit" 
+            form="form" 
+            class="w-64 border-2 border-transparent bg-white py-4 px-16 rounded-lg font-bold text-xl tracking-tight hover:border-yellow-600 hover:text-yellow-800 mb-8">
+            Skaičiuoti
+        </button>
+        
+        <div id="resultBox">
+        </div>
+    </main>
+
+    <script>
+        const form = document.querySelector('#form');
+        const ageInput = document.querySelector('#ageInput')
+        const weightInput = document.querySelector('#weightInput');
+        const heightInput = document.querySelector('#heightInput');
+        const resultBox = document.querySelector('#resultBox');
+        let genderInput = '';
+        
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            destroyBMISection();
+            const formData = new FormData();
+
+            if (
+               validateNumber(ageInput.value, 0, 120) &&
+               validateNumber(weightInput.value, 1, 300) &&
+               validateNumber(heightInput.value, 10, 270) &&
+               validateGender(genderInput)
+               ) {
+    
+                formData.set('gender', genderInput);
+                formData.set('age', ageInput.value);
+                formData.set('weight', weightInput.value);
+                formData.set('height', heightInput.value);
+                
+                postData(formData);
+                resetInputs();
+            } else {
+                alert('Blogai įvesti duomenys')
+            }
+        });
+
+        async function postData(formData) {
+            await fetch('/form-handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success === true) {
+                    createBMISection(data.data);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function setGender(input) {
+           genderInput = input;
+        }
+
+        function validateNumber(input, min, max) {
+            
+            if (Number(input) && Number(input) > min && Number(input) < max) return true;
+            return false;
+        }
+
+        function validateGender(input) {
+            if (input === 'male' || input === 'female') return true;
+            return false;
+        }
+
+        function createBMISection(data) {
+            const { gender, bmi } = data;
+            const img = createImage(gender);
+            resultBox.innerHTML = `
+            <div class="bg-white rounded-lg w-full px-8 flex">
+                <img src=${img} alt="">
+                <div class="pt-16 pl-16 pr-8">
+                    <h3 class="text-3xl font-bold text-black tracking-tight mb-12">Jūsų KMI yra: <span class="text-green-500 bg-green-100 text-4xl rounded-lg py-2 px-4">${bmi}<span></h3>
+                    <p class="text-lg tracking-tight">${getBMIComment(bmi)}</p>
+                </div>
+            </div>
+            `;
+        }
+
+        function destroyBMISection() {
+            resultBox.innerHTML = '';
+        }
+
+        function createImage(gender) {
+            const maleImageUrl = 'https://assets.website-files.com/5e51c674258ffe10d286d30a/5e535c42c67e79a7a6962d19_peep-91.svg';
+            const femaleImageUrl = 'https://assets.website-files.com/5e51c674258ffe10d286d30a/5e535b3ad399233aa855d221_peep-82.svg';
+
+            if (gender === 'male') return maleImageUrl;
+            return femaleImageUrl;
+        }
+
+
+
+        function resetInputs() {
+            ageInput.value = '';
+            weightInput.value = '';
+            heightInput.value = '';
+        }
+
+        function getBMIComment(bmi) {
+            const underMsg= 'Jūsų kūno svoris gerokai per mažas! Atsparumas infekcijoms, imuninė sistema, funkcinė būklė labia silpnos. Didelė rizika susirgti depresija, širdies nepakankumu. Jums reikia nedelsiant susirūpinti savo sveikata!';
+            const idealMsg = 'Jūsų kūno svoris normos ribose. Pagerinę mitybos įpročius ir sprotuodami pagražinsite savo kūno linijas.';
+            const normalMsg = 'Turite nereikalingo svorio ir šiek tiek padidėjusią grėsmę sveikatai. Jums jau būtina susirūpinti savo svoriu ir mityba!';
+            const obeseMsg = 'Dėl netinkamos mitybos rizikuojate susirgti medžiagų apykaitos, širdies ir kraujagyslių sistemos, virškinimo ligomis. Jums būtina susirūpinti savo svoriu, mityba ir sveikata!'
+
+            if (bmi < 18.5) return underMsg;
+            if(bmi > 18.5 && bmi < 25) return idealMsg;
+            if(bmi > 25 && bmi < 30) return normalMsg;
+            if(bmi > 30) return obeseMsg;
+        }
+
+    </script>
+</body>
+</html>
