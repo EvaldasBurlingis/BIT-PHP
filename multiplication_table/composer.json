@@ -1,0 +1,11 @@
+{
+    "name": "evaldas/multiplication_table",
+    "require": {
+        "codedungeon/php-cli-colors": "^1.12"
+    },
+    "authors": [
+        {
+            "name": "Evaldas"
+        }
+    ]
+}
