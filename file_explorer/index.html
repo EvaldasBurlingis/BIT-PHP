@@ -6,8 +6,26 @@
     <title>File exploer</title>
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="min-h-screen py-16">
-    <main class="container mx-auto">
+<body class="min-h-screen relative">
+    
+    <!-- Create folder modal -->
+    <div
+        id="modal"
+        style="background-color: rgba(0, 0, 0, 0.7);" 
+        class="fixed top-0 left-0 h-full pt-32 py-32 w-full flex justify-center hidden modal">
+
+    </div>
+    
+
+    <main class="container mx-auto pt-32 pb-16">
+        <div class="mb-4 flex flex-wrap">
+            <button 
+                class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 mr-4"
+                onclick="openModal('newFolder')"
+            >
+                Add new folder
+            </button>
+        </div>
         <div class="flex flex-col">
             <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                 <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
@@ -42,7 +60,8 @@
         * Action constants
         */
         const ACTION = {
-            CD: 'cd'
+            CD: 'cd',
+            MKDIR: 'mkdir'
         };
         
         /*
@@ -106,6 +125,102 @@
         }
 
         /*
+        * Create new file/folder
+        */
+        async function createNew(type) {
+            const input = document.querySelector('#createNewInput').value;
+            const errorMsg = document.querySelector('#inputError');
+            
+            const form = new FormData();
+
+            if (input.trim().length > 0 && !state.folders.includes(input.trim()))
+            {
+                if (type === 'folder') {
+                    form.set('path', state.current_path);
+                    form.set('action', ACTION.MKDIR);
+                    form.set('new_folder_name', input);
+                    
+                    await fetch('file_manager.php', {
+                        method: 'POST',
+                        body: form
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        setStateFolders(data.data.folders);
+                        setStateFiles(data.data.files);
+    
+                        createTableContent(state.folders, state.files);
+                    })
+                    .catch(err => console.error(err))
+                }
+                
+                closeModal();
+            } else {
+                errorMsg.textContent = 'Folder with this name already exist';
+                errorMsg.classList.remove('hidden');
+            }
+
+            if(input.trim().length <= 0) {
+                errorMsg.textContent = 'Enter valid folder name';
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        /*
+        * DOM FUNCTIONS
+        */
+        function openModal(modal) {
+            const modalDiv = document.querySelector('#modal');
+
+            if(modal === 'newFolder') {
+                modalDiv.classList.remove('hidden');
+                modalDiv.innerHTML = `
+                    <div class="w-full max-w-xl">
+                        <div class="bg-white p-4 rounded-lg">
+                            <div class="w-full flex items-center justify-between mb-2">
+                                <span class="text-base font-medium">Create new folder</span>
+                                <button class="text-gray-400 hover:text-gray-600" onclick="closeModal()">
+                                    <svg 
+                                        class="w-6 h-6" 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        viewBox="0 0 24 24" 
+                                        xmlns="http://www.w3.org/2000/svg">
+                                            <path 
+                                                stroke-linecap="round" 
+                                                stroke-linejoin="round" 
+                                                stroke-width="2" 
+                                                d="M6 18L18 6M6 6l12 12">
+                                            </path>
+                                    </svg>
+                                </button>   
+                            </div>
+                            <hr />
+                            <div class="py-6">
+                                <input 
+                                    type="text" 
+                                    placeholder="enter folder name"
+                                    class="px-4 py-2 rounded-lg placeholder-gray-900 w-full border border-gray-300 mb-1" 
+                                    required 
+                                    id="createNewInput">
+                                <span id="inputError" class="text-sm text-red-500 hidden block"></span>
+                                <button 
+                                    class="bg-indigo-600 px-4 rounded-lg text-sm text-white py-2 hover:bg-indigo-800 mt-4" 
+                                    onclick="createNew('folder')">Create folder</button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            }
+        }
+
+        function closeModal() {
+            const modalDiv = document.querySelector('.modal');
+            modalDiv.classList.add('hidden');
+        }
+
+
+        /*
         * Create table body
         */
         function createTableContent(folders, files) {
@@ -153,7 +268,22 @@
                 ${state.current_path !== '/' ? `
                     <tr class="hover:bg-gray-50">
                         <td class="pl-4 pr-6 py-2 whitespace-nowrap text-sm flex items-center">
-                            <span class="cursor-pointer" onclick="goBack()">..</span>
+                            <span class="cursor-pointer flex items-center bg-gray-200 px-4 py-1 rounded-lg hover:bg-gray-300 text-sm" onclick="goBack()">     
+                                <svg 
+                                    class="w-4 h-4 mr-2" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24" 
+                                    xmlns="http://www.w3.org/2000/svg">
+                                        <path 
+                                            stroke-linecap="round" 
+                                            stroke-linejoin="round" 
+                                            stroke-width="2" 
+                                            d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z">
+                                        </path>
+                                </svg>
+                                Go back
+                            </span>
                         </td>
                     </tr>
                 ` : ''}
@@ -186,7 +316,6 @@
                 ` : ''}
             `;
         }
-
 
 
         /*

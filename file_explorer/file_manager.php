@@ -16,8 +16,34 @@
         $fm->setAction($_POST['action']);
 
         echo $fm->getJsonResponse();
-    } else {
+    } 
 
+    /**
+     * Create new directoruy
+     */
+    if (isset($_POST) && $_POST['action'] === 'mkdir') {
+
+        $path = $_POST['path'];
+
+        if($path === '/') $fm->setPath($cwd);
+        if($path !== '/') $fm->setPath(($cwd . $path));
+
+        $fm->setAction($_POST['action']);
+        $fm->createNewDir($_POST['new_folder_name']);
+
+        echo $fm->getJsonResponse();
+    }
+
+    /**
+     * 
+     * Catch all error
+    */
+
+    if (
+        isset($_POST) && 
+        $_POST['action'] !== 'mkdir' && 
+        $_POST['action'] !== 'cd'
+    ) {
         $data = [ 
             'success' => false,
             'error' => 'Bad Request'
@@ -25,6 +51,8 @@
     
         echo json_encode($data);
     }
+
+
 
     class FileManager
     {
@@ -156,6 +184,17 @@
             return $files;
         }
 
+        /**
+         * Create new directory
+         *
+         * @return void
+        */
+        public function createNewDir(string $new_folder_name) : void
+        {
+            $new_dir_path = $this->path . '/' . $new_folder_name;
+
+            mkdir($new_dir_path);
+        }
 
         /**
          * JSON response to api call
@@ -165,17 +204,14 @@
         public function getJsonResponse() : string
         {
             // Response to cd operation
-            if ($this->getAction() === 'cd') {
-                $response = [
-                    'success' => true,
-                    'data' => [
-                        'path' => $this->getPath(),
-                        'action' => $this->getAction(),
-                        'folders' => $this->getFolders(),
-                        'files' => $this->getFiles()
-                    ]
-                ];
-            }
+            $response = [
+                'success' => true,
+                'data' => [
+                    'path' => $this->getPath(),
+                    'folders' => $this->getFolders(),
+                    'files' => $this->getFiles()
+                ]
+            ];
 
             return json_encode($response);
         }
