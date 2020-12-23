@@ -3,12 +3,12 @@
     $fm = new FileManager();
     $cwd = getcwd();
 
+    $path = $_POST['path'];
+
     /**
      * Change directory
      */
     if (isset($_POST) && $_POST['action'] === 'cd') {
-
-        $path = $_POST['path'];
 
         if($path === '/') $fm->setPath($cwd);
         if($path !== '/') $fm->setPath(($cwd . $path));
@@ -22,8 +22,6 @@
      * Create new directory
      */
     if (isset($_POST) && $_POST['action'] === 'mkdir') {
-
-        $path = $_POST['path'];
 
         if($path === '/') $fm->setPath($cwd);
         if($path !== '/') $fm->setPath(($cwd . $path));
@@ -39,15 +37,27 @@
      */
     if (isset($_POST) && $_POST['action'] === 'unlink') {
 
-        $path = $_POST['path'];
+        if($path === '/') $fm->setPath($cwd);
+        if($path !== '/') $fm->setPath(($cwd . $path));
+
+        $fm->setAction($_POST['action']);
+        $fm->deleteFile($_POST['filename']);
+
+        echo $fm->getJsonResponse();
+    }
+
+    /**
+     * Download file
+     */
+    if (isset($_POST) && $_POST['action'] === 'download') {
 
         if($path === '/') $fm->setPath($cwd);
         if($path !== '/') $fm->setPath(($cwd . $path));
 
         $fm->setAction($_POST['action']);
-        $fm->deleteFile($_POST['file']);
+        echo $fm->downloadFile($_POST['filename']);
 
-        echo $fm->getJsonResponse();
+        // echo $fm->getJsonResponse();
     }
 
     /**
@@ -59,7 +69,8 @@
         isset($_POST) && 
         $_POST['action'] !== 'mkdir' && 
         $_POST['action'] !== 'cd' &&
-        $_POST['action'] !== 'unlink'
+        $_POST['action'] !== 'unlink' &&
+        $_POST['action'] !== 'download'
     ) {
         $data = [ 
             'success' => false,
@@ -218,11 +229,33 @@
          *
          * @return void
         */
-        public function deleteFile(string $file) : void
+        public function deleteFile(string $filename) : void
         {
-            $file_path = $this->path . '/' . $file;
+            $file_path = $this->path . '/' . $filename;
 
             unlink($file_path);
+        }
+
+        /**
+         * Create new directory
+         *
+         * @return void
+        */
+        public function downloadFile(string $filename) : void
+        {
+            $file_path = $this->path . '/' . $filename;
+
+            if (file_exists($file_path)) {
+                header('Content-Description: File Transfer');
+                header('Content-Type: application/octet-stream');
+                header('Content-Disposition: attachment; filename="'.basename($file_path).'"');
+                header('Expires: 0');
+                header('Cache-Control: must-revalidate');
+                header('Pragma: public');
+                header('Content-Length: ' . filesize($file_path));
+                readfile($file_path);
+                exit;
+            }
         }
 
         /**

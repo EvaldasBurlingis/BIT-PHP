@@ -62,7 +62,8 @@
         const ACTION = {
             CD: 'cd',
             MKDIR: 'mkdir',
-            UNLINK: 'unlink'
+            UNLINK: 'unlink',
+            DOWNLOAD: 'download'
         };
         
         /*
@@ -80,7 +81,6 @@
             return state.files= files;
         }
 
-        
         /*
         * Move one folder backwards
         */
@@ -123,8 +123,6 @@
                 createTableContent(state.folders, state.files);
             })
             .catch(err => console.log(err));
-
-            console.log(state);
         }
 
         /*
@@ -172,7 +170,7 @@
         /*
         * Delete file
         */
-        async function deleteFile(file) {
+        async function deleteFile(filename) {
             const form = new FormData();
 
             const file_path = state.current_path + file;
@@ -182,7 +180,7 @@
                 if (state.files.includes(file)) {
                     form.set('path', state.current_path);
                     form.set('action', ACTION.UNLINK);
-                    form.set('file', file);
+                    form.set('filename', filename);
     
                     await fetch('file_manager.php', {
                             method: 'POST',
@@ -201,7 +199,46 @@
             }
         }
 
+        /*
+        * Download file 
+        */
+        async function downloadFile(file) {
+            // const form = new FormData();
+            // form.set('path', state.current_path);
+            // form.set('action', ACTION.DOWNLOAD);
+            // form.set('filename', file)
 
+            // await fetch('file_manager.php', {
+            //     method: 'POST',
+            //     body: form
+            // })
+            // .then(res => res.text())
+            // .then(data => console.log(data))
+            // .catch(err => console.error(err))
+
+            const form = new FormData();
+            form.set('path', state.current_path);
+            form.set('action', ACTION.DOWNLOAD);
+            form.set('filename', file)
+
+            await fetch('file_manager.php', {
+                method: 'POST',
+                body: form
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = file;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(err => console.error(err))
+
+        }         
 
         /*
         * DOM FUNCTIONS
@@ -255,7 +292,6 @@
             const modalDiv = document.querySelector('.modal');
             modalDiv.classList.add('hidden');
         }
-
 
         /*
         * Create table body
@@ -345,12 +381,22 @@
                         <td class="pl-4 pr-6 py-2 whitespace-nowrap flex items-center ">
                             ${state.home_path + file === state.current_path + file ? `
                                 <button 
+                                    class="cursor-pointer bg-green-100 text-xs text-green-600 px-4 py-1 rounded-md mr-2 hover:bg-green-200" 
+                                    onclick="downloadFile('${file}')">
+                                    Download
+                                </button>
+                                <button 
                                     class="cursor-not-allowed bg-gray-200 text-xs text-gray-400 px-4 py-1 rounded-md">
                                     Delete
                                 </button>
                                 ` : `
                                 <button 
-                                    class="cursor-pointer bg-red-200 text-xs text-red-600 px-4 py-1 rounded-md" 
+                                    class="cursor-pointer bg-green-100 text-xs text-green-600 px-4 py-1 rounded-md mr-2 hover:bg-green-200" 
+                                    onclick="downloadFile('${file}')">
+                                    Download
+                                </button>
+                                <button 
+                                    class="cursor-pointer bg-red-100 text-xs text-red-600 px-4 py-1 rounded-md " 
                                     onclick="deleteFile('${file}')">
                                     Delete
                                 </button>`}
@@ -366,7 +412,6 @@
                 ` : ''}
             `;
         }
-
 
         /*
         * Initialize application

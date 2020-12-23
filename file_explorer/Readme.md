@@ -11,4 +11,5 @@ Server file explorer built with PHP and JavaScript
  - :heavy_check_mark: User can delete file
  - :x: User can read file content
  - :x: User can upload new file
+ - :heavy_check_mark: User can download file
  - :x: Fake authorization
