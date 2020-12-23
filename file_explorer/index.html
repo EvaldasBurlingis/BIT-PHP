@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File exploer</title>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="min-h-screen py-16">
+    <main class="container mx-auto">
+        <div class="flex flex-col">
+            <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-indigo-600">
+                                <tr>
+                                    <th scope="col" class="px-6 py-2 text-left text-xs font-medium text-white tracking-wider" id="breadcrumbs">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id='tbody'>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        /*
+        * Global state that controls this app
+        */
+        let state = {
+            current_path: '/',
+            home_path: '/',
+            folders: [],
+            files: [], 
+        };
+
+        /*
+        * Action constants
+        */
+        const ACTION = {
+            CD: 'cd'
+        };
+        
+        /*
+        * Global state mutators
+        */
+        function setStateCurrentPath(path) {
+            return state.current_path = path;
+        }
+
+        function setStateFolders(folders) {
+            return state.folders = folders;
+        }
+
+        function setStateFiles(files) {
+            return state.files= files;
+        }
+
+        
+        /*
+        * Move one folder backwards
+        */
+        function goBack() {
+            let path = state.current_path.split('/');
+
+            path.splice(-2, 2);
+            path = path.join('/');
+
+            setStateCurrentPath((path + '/'));
+            changeDirectory(state.current_path)
+        }
+
+        /*
+        * Move one folder forwards
+        */
+        function goTo(path) {
+            setStateCurrentPath((state.current_path + path));
+            changeDirectory(state.current_path);
+        }
+
+        /*
+        * Move between directories
+        */
+        async function changeDirectory(path) {
+            const form = new FormData();
+            form.set('path', path);
+            form.set('action', ACTION.CD);
+            
+            await fetch('file_manager.php', {
+                method: 'POST',
+                body: form
+            })
+            .then(res => res.json())
+            .then(data => {
+
+                setStateFolders(data.data.folders);
+                setStateFiles(data.data.files);
+
+                createTableContent(state.folders, state.files);
+            })
+            .catch(err => console.log(err));
+        }
+
+        /*
+        * Create table body
+        */
+        function createTableContent(folders, files) {
+            const tbody = document.querySelector('#tbody');
+            const breadcrumbs = document.querySelector('#breadcrumbs')
+            
+            let tr = document.createElement('tr');
+            let td = document.createElement('td');
+
+            breadcrumbs.innerHTML = state.current_path;
+
+            let svg = {
+                folder: 
+                    `<svg 
+                        class="w-6 h-6 mr-2 text-gray-900" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg">
+                            <path 
+                                stroke-linecap="round" 
+                                stroke-linejoin="round" 
+                                stroke-width="2" 
+                                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z">
+                            </path>
+                    </svg>`,
+                file:
+                    `<svg 
+                            class="w-6 h-6 mr-2" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg">
+                                <path 
+                                    stroke-linecap="round" 
+                                    stroke-linejoin="round" 
+                                    stroke-width="2" 
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                </path>
+                        </svg>`
+            };
+
+
+            tbody.innerHTML = `
+                ${state.current_path !== '/' ? `
+                    <tr class="hover:bg-gray-50">
+                        <td class="pl-4 pr-6 py-2 whitespace-nowrap text-sm flex items-center">
+                            <span class="cursor-pointer" onclick="goBack()">..</span>
+                        </td>
+                    </tr>
+                ` : ''}
+                ${folders.map(dir => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="pl-4 pr-6 py-2 whitespace-nowrap text-sm flex items-center">
+                            ${svg.folder}
+                            <span class="cursor-pointer hover:text-indigo-700" onclick="goTo('${dir}/')">
+                                ${dir}
+                            </span>
+                        </td>
+                    <tr>
+                    `).join('')}
+                ${files.map(dir => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="pl-4 pr-6 py-2 whitespace-nowrap text-sm flex items-center text-gray-500">
+                            ${svg.file}
+                            <span class="cursor-pointer">
+                                ${dir}
+                            </span>
+                        </td>
+                    <tr>
+                    `).join('')}
+                ${files.length === 0 && folders.length === 0 ? `
+                    <tr>
+                        <td class="pl-4 pr-6 py-8">
+                            <p class="text-xl tracking-tight text-center">this directory is empty</p>
+                        </td>
+                    <tr>
+                ` : ''}
+            `;
+        }
+
+
+
+        /*
+        * Initialize application
+        */
+        changeDirectory(state.home_path);
+    </script>
+</body>
+</html>
