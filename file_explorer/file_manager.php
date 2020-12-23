@@ -19,7 +19,7 @@
     } 
 
     /**
-     * Create new directoruy
+     * Create new directory
      */
     if (isset($_POST) && $_POST['action'] === 'mkdir') {
 
@@ -35,6 +35,22 @@
     }
 
     /**
+     * Delete file
+     */
+    if (isset($_POST) && $_POST['action'] === 'unlink') {
+
+        $path = $_POST['path'];
+
+        if($path === '/') $fm->setPath($cwd);
+        if($path !== '/') $fm->setPath(($cwd . $path));
+
+        $fm->setAction($_POST['action']);
+        $fm->deleteFile($_POST['file']);
+
+        echo $fm->getJsonResponse();
+    }
+
+    /**
      * 
      * Catch all error
     */
@@ -42,7 +58,8 @@
     if (
         isset($_POST) && 
         $_POST['action'] !== 'mkdir' && 
-        $_POST['action'] !== 'cd'
+        $_POST['action'] !== 'cd' &&
+        $_POST['action'] !== 'unlink'
     ) {
         $data = [ 
             'success' => false,
@@ -194,6 +211,18 @@
             $new_dir_path = $this->path . '/' . $new_folder_name;
 
             mkdir($new_dir_path);
+        }
+
+        /**
+         * Create new directory
+         *
+         * @return void
+        */
+        public function deleteFile(string $file) : void
+        {
+            $file_path = $this->path . '/' . $file;
+
+            unlink($file_path);
         }
 
         /**
