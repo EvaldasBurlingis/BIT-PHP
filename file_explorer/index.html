@@ -25,6 +25,12 @@
             >
                 Add new folder
             </button>
+            <button 
+                class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 mr-4"
+                onclick="openModal('uploadFile')"
+            >
+                Upload file
+            </button>
         </div>
         <div class="flex flex-col">
             <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -63,7 +69,8 @@
             CD: 'cd',
             MKDIR: 'mkdir',
             UNLINK: 'unlink',
-            DOWNLOAD: 'download'
+            DOWNLOAD: 'download',
+            UPLOAD: 'upload'
         };
         
         /*
@@ -116,10 +123,8 @@
             })
             .then(res => res.json())
             .then(data => {
-
                 setStateFolders(data.data.folders);
                 setStateFiles(data.data.files);
-
                 createTableContent(state.folders, state.files);
             })
             .catch(err => console.log(err));
@@ -149,7 +154,6 @@
                     .then(data => {
                         setStateFolders(data.data.folders);
                         setStateFiles(data.data.files);
-    
                         createTableContent(state.folders, state.files);
                     })
                     .catch(err => console.error(err))
@@ -173,28 +177,26 @@
         async function deleteFile(filename) {
             const form = new FormData();
 
-            const file_path = state.current_path + file;
+            const file_path = state.current_path + filename;
 
             if( file_path !== '/index.html' && file_path !== '/Readme.md' && file_path !== '/file_manager.php')
             {
-                if (state.files.includes(file)) {
+                if (state.files.includes(filename)) {
                     form.set('path', state.current_path);
                     form.set('action', ACTION.UNLINK);
                     form.set('filename', filename);
     
                     await fetch('file_manager.php', {
-                            method: 'POST',
-                            body: form
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-    
-                            setStateFolders(data.data.folders);
-                            setStateFiles(data.data.files);
-        
-                            createTableContent(state.folders, state.files);
-                        })
-                        .catch(err => console.error(err))
+                        method: 'POST',
+                        body: form
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        setStateFolders(data.data.folders);
+                        setStateFiles(data.data.files);
+                        createTableContent(state.folders, state.files);
+                    })
+                    .catch(err => console.error(err))
                 }
             }
         }
@@ -203,19 +205,6 @@
         * Download file 
         */
         async function downloadFile(file) {
-            // const form = new FormData();
-            // form.set('path', state.current_path);
-            // form.set('action', ACTION.DOWNLOAD);
-            // form.set('filename', file)
-
-            // await fetch('file_manager.php', {
-            //     method: 'POST',
-            //     body: form
-            // })
-            // .then(res => res.text())
-            // .then(data => console.log(data))
-            // .catch(err => console.error(err))
-
             const form = new FormData();
             form.set('path', state.current_path);
             form.set('action', ACTION.DOWNLOAD);
@@ -229,63 +218,118 @@
             .then(blob => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
+
                 a.style.display = 'none';
                 a.href = url;
                 a.download = file;
+
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
             })
             .catch(err => console.error(err))
+        }
+        
+        /*
+        * Upload file 
+        */
+        async function uploadFile() {
+            const fileToUpload = document.querySelector('#uploadFileInput').files;
 
-        }         
+            if(state.files.includes(fileToUpload[0].name)) {
+                alert('File with this name already exist');
+            } else {
+                const form = new FormData();
+                form.set('path', state.current_path);
+                form.set('action', ACTION.UPLOAD);
+                form.set('file', fileToUpload[0])
+    
+                await fetch('file_manager.php', {
+                    method: 'POST',
+                    body: form
+                })
+                .then(res => res.json())
+                .then(data => {
+                    setStateFolders(data.data.folders);
+                    setStateFiles(data.data.files);
+    
+                    createTableContent(state.folders, state.files);
+                })
+                .catch(err => console.error(err));
+    
+                closeModal();
+            }
+
+        }   
 
         /*
         * DOM FUNCTIONS
         */
-        function openModal(modal) {
+        function openModal(type) {
             const modalDiv = document.querySelector('#modal');
 
-            if(modal === 'newFolder') {
-                modalDiv.classList.remove('hidden');
-                modalDiv.innerHTML = `
-                    <div class="w-full max-w-xl">
-                        <div class="bg-white p-4 rounded-lg">
-                            <div class="w-full flex items-center justify-between mb-2">
-                                <span class="text-base font-medium">Create new folder</span>
-                                <button class="text-gray-400 hover:text-gray-600" onclick="closeModal()">
-                                    <svg 
-                                        class="w-6 h-6" 
-                                        fill="none" 
-                                        stroke="currentColor" 
-                                        viewBox="0 0 24 24" 
-                                        xmlns="http://www.w3.org/2000/svg">
-                                            <path 
-                                                stroke-linecap="round" 
-                                                stroke-linejoin="round" 
-                                                stroke-width="2" 
-                                                d="M6 18L18 6M6 6l12 12">
-                                            </path>
-                                    </svg>
-                                </button>   
-                            </div>
-                            <hr />
-                            <div class="py-6">
+            modalDiv.classList.remove('hidden');
+            modalDiv.innerHTML = `
+                <div class="w-full max-w-xl">
+                    <div class="bg-white p-4 rounded-lg">
+                        <div class="w-full flex items-center justify-between mb-2">
+                            <span class="text-base font-medium">
+                                ${type === 'newFolder' ? 'Create new folder' : ''}
+                                ${type === 'uploadFile' ? 'Upload new file' : ''}
+                            </span>
+                            <button class="text-gray-400 hover:text-gray-600" onclick="closeModal()">
+                                <svg 
+                                    class="w-6 h-6" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24" 
+                                    xmlns="http://www.w3.org/2000/svg">
+                                        <path 
+                                            stroke-linecap="round" 
+                                            stroke-linejoin="round" 
+                                            stroke-width="2" 
+                                            d="M6 18L18 6M6 6l12 12">
+                                        </path>
+                                </svg>
+                            </button>   
+                        </div>
+                        <hr />
+                        <div class="py-6">
+                            ${type === 'newFolder' ? `
                                 <input 
                                     type="text" 
                                     placeholder="enter folder name"
                                     class="px-4 py-2 rounded-lg placeholder-gray-900 w-full border border-gray-300 mb-1" 
                                     required 
                                     id="createNewInput">
-                                <span id="inputError" class="text-sm text-red-500 hidden block"></span>
+                            ` : ''}
+                            ${type === 'uploadFile' ? `
+                                <input 
+                                    type="file" 
+                                    placeholder="select file to upload"
+                                    class="px-4 py-2 rounded-lg placeholder-gray-900 w-full border border-gray-300 mb-1" 
+                                    required 
+                                    id="uploadFileInput">
+                            ` : ''}
+                            <span id="inputError" class="text-sm text-red-500 hidden block"></span>
+                            ${type === 'newFolder' ? `
                                 <button 
                                     class="bg-indigo-600 px-4 rounded-lg text-sm text-white py-2 hover:bg-indigo-800 mt-4" 
-                                    onclick="createNew('folder')">Create folder</button>
-                            </div>
+                                    onclick="createNew('folder')">
+                                        Create folder
+                                </button>
+                            ` : ''}
+                            ${type === 'uploadFile' ? `
+                                <button 
+                                    class="bg-indigo-600 px-4 rounded-lg text-sm text-white py-2 hover:bg-indigo-800 mt-4"
+                                    onclick="uploadFile()">
+                                        Upload file
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
-                `
-            }
+                </div>
+            `;
         }
 
         function closeModal() {
@@ -379,7 +423,11 @@
                             </span>
                         </td>
                         <td class="pl-4 pr-6 py-2 whitespace-nowrap flex items-center ">
-                            ${state.home_path + file === state.current_path + file ? `
+                            ${
+                                '/index.html' === state.current_path + file ||
+                                '/Readme.md' === state.current_path + file ||
+                                '/file_manager.php' === state.current_path + file 
+                             ? `
                                 <button 
                                     class="cursor-pointer bg-green-100 text-xs text-green-600 px-4 py-1 rounded-md mr-2 hover:bg-green-200" 
                                     onclick="downloadFile('${file}')">

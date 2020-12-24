@@ -10,8 +10,7 @@
      */
     if (isset($_POST) && $_POST['action'] === 'cd') {
 
-        if($path === '/') $fm->setPath($cwd);
-        if($path !== '/') $fm->setPath(($cwd . $path));
+        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
 
         $fm->setAction($_POST['action']);
 
@@ -23,8 +22,7 @@
      */
     if (isset($_POST) && $_POST['action'] === 'mkdir') {
 
-        if($path === '/') $fm->setPath($cwd);
-        if($path !== '/') $fm->setPath(($cwd . $path));
+        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
 
         $fm->setAction($_POST['action']);
         $fm->createNewDir($_POST['new_folder_name']);
@@ -37,8 +35,7 @@
      */
     if (isset($_POST) && $_POST['action'] === 'unlink') {
 
-        if($path === '/') $fm->setPath($cwd);
-        if($path !== '/') $fm->setPath(($cwd . $path));
+        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
 
         $fm->setAction($_POST['action']);
         $fm->deleteFile($_POST['filename']);
@@ -51,17 +48,28 @@
      */
     if (isset($_POST) && $_POST['action'] === 'download') {
 
-        if($path === '/') $fm->setPath($cwd);
-        if($path !== '/') $fm->setPath(($cwd . $path));
+        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
 
         $fm->setAction($_POST['action']);
-        echo $fm->downloadFile($_POST['filename']);
 
-        // echo $fm->getJsonResponse();
+        echo $fm->downloadFile($_POST['filename']);
     }
 
     /**
-     * 
+     * Upload file
+     */
+    if (isset($_POST) && $_POST['action'] === 'upload') {
+
+        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+
+        $fm->setAction($_POST['action']);
+        
+        if (isset($_FILES['file'])) $fm->uploadFile();
+            
+        echo $fm->getJsonResponse();
+    }
+
+    /**
      * Catch all error
     */
 
@@ -70,7 +78,8 @@
         $_POST['action'] !== 'mkdir' && 
         $_POST['action'] !== 'cd' &&
         $_POST['action'] !== 'unlink' &&
-        $_POST['action'] !== 'download'
+        $_POST['action'] !== 'download' &&
+        $_POST['action'] !== 'upload'
     ) {
         $data = [ 
             'success' => false,
@@ -80,14 +89,11 @@
         echo json_encode($data);
     }
 
-
-
     class FileManager
     {
         
         private string $path;
         private string $action;
-
 
         /**
          * Return current path
@@ -96,9 +102,8 @@
          */
         private function getPath() : string
         {
-                return $this->path;
+            return $this->path;
         }
-
 
         /**
          * Set current path
@@ -107,9 +112,9 @@
          */
         public function setPath(string $path) : self
         {
-                $this->path = $path;
+            $this->path = $path;
 
-                return $this;
+            return $this;
         }
 
 
@@ -120,9 +125,8 @@
          */
         private function getAction() : string
         {
-                return $this->action;
+            return $this->action;
         }
-
 
         /**
          * Set active action
@@ -131,9 +135,9 @@
          */
         public function setAction(string $action) : self
         {
-                $this->action = $action;
+            $this->action = $action;
 
-                return $this;
+            return $this;
         }
 
 
@@ -164,17 +168,13 @@
             if($this->path === getcwd()) {
 
                 foreach ($files_and_folders as $fnd) {
-
                     if (is_dir($fnd)) array_push($folders, $fnd);
-
                 }
 
             } else {
 
                 foreach ($files_and_folders as $fnd) {
-
                     if (is_dir(($this->path . $fnd))) array_push($folders, $fnd);
-
                 }
             }
 
@@ -196,15 +196,12 @@
             if($this->path === getcwd()) {
 
                 foreach ($files_and_folders as $fnd) {
-
                     if (is_file($fnd)) array_push($files, $fnd);
-
                 }
 
             } else {
                 
                 foreach ($files_and_folders as $fnd) {
-
                     if (is_file(($this->path . $fnd))) array_push($files, $fnd);
                 }
             }
@@ -237,7 +234,7 @@
         }
 
         /**
-         * Create new directory
+         * Download file
          *
          * @return void
         */
@@ -255,6 +252,21 @@
                 header('Content-Length: ' . filesize($file_path));
                 readfile($file_path);
                 exit;
+            }
+        }
+
+        /**
+         * Upload file
+         *
+         * @return void
+        */
+        public function uploadFile() : void
+        {
+            $filepath = $this->getPath() . '/' . $_FILES['file']['name'];
+
+
+            if (!file_exists($filepath)) {
+                move_uploaded_file($_FILES['file']['tmp_name'], $filepath);
             }
         }
 

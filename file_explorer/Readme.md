@@ -10,6 +10,38 @@ Server file explorer built with PHP and JavaScript
  - :heavy_check_mark: User can create new folder
  - :heavy_check_mark: User can delete file
  - :x: User can read file content
- - :x: User can upload new file
+ - :heavy_check_mark: User can upload new file
  - :heavy_check_mark: User can download file
  - :x: Fake authorization
+
+### Installation
+
+- if php installed locally
+
+```bash
+
+# clone project
+
+# cd into it
+
+# run local server
+php -S localhost:8000 
+
+
+```
+
+- Using server
+
+```bash
+
+# clone project 
+
+
+# mv project to specified directory
+mv 
+
+
+# open server url 
+
+
+```
