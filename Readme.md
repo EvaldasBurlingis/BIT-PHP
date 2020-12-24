@@ -30,3 +30,15 @@
 <div>
     <img src="assets/multiplication_table_cli.png" alt="">
 <div>
+
+---
+
+### File Explorer SPA
+
+<div>
+    <img src="file_explorer/assets/login.png"/>
+    <img src="file_explorer/assets/main.png"/>
+    <img src="file_explorer/assets/navigate.png"/>
+    <img src="file_explorer/assets/add-folder.png"/>
+    <img src="file_explorer/assets/upload-file.png"/>
+</div>

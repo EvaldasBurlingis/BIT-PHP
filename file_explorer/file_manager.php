@@ -1,73 +1,116 @@
 <?php declare(strict_types = 1);
 
+    $fake_db = [
+        'username' => 'user',
+        'password' => password_hash('secret', PASSWORD_BCRYPT),
+        'access_token' => '$2y$10$HP1RbNBxdXDoSDIxiJSzheQ1oJk5pNVpiwBfu.bJzzYeupsACpGXm'
+    ];
+
     $fm = new FileManager();
     $cwd = getcwd();
 
-    $path = $_POST['path'];
+    $path = isset($_POST['path']) ? $_POST['path'] : '';
 
     /**
-     * Change directory
+     * Login
      */
-    if (isset($_POST) && $_POST['action'] === 'cd') {
+    if (isset($_POST) && $_POST['action'] === 'login') {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
 
-        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+        $response;
 
-        $fm->setAction($_POST['action']);
+        if ($username === $fake_db['username'] && password_verify($password, $fake_db['password'])) {
 
-        echo $fm->getJsonResponse();
+            $response = [
+                'success' => true,
+                'data' => [
+                    'authToken' => $fake_db['access_token']
+                ]
+            ];
+
+        } else {
+            $response = ['success' => false];
+            $_SESSION['user'] = 0;
+        }
+
+        echo json_encode($response);
     } 
 
     /**
-     * Create new directory
+     * Logout
      */
-    if (isset($_POST) && $_POST['action'] === 'mkdir') {
+    if (isset($_POST) && $_POST['action'] === 'logout') {
+    } 
 
-        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+    // on each request validate auth token
+    if(isset($_POST['authToken']) && $_POST['authToken'] === $fake_db['access_token']) {
 
-        $fm->setAction($_POST['action']);
-        $fm->createNewDir($_POST['new_folder_name']);
 
-        echo $fm->getJsonResponse();
-    }
+        /**
+         * Change directory
+         */
+        if (isset($_POST) && $_POST['action'] === 'cd') {
+            $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+    
+            $fm->setAction($_POST['action']);
 
-    /**
-     * Delete file
-     */
-    if (isset($_POST) && $_POST['action'] === 'unlink') {
+            echo $fm->getJsonResponse();
+        } 
 
-        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+        /**
+         * Create new directory
+         */
+        if (isset($_POST) && $_POST['action'] === 'mkdir') {
 
-        $fm->setAction($_POST['action']);
-        $fm->deleteFile($_POST['filename']);
+            $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
 
-        echo $fm->getJsonResponse();
-    }
+            $fm->setAction($_POST['action']);
+            $fm->createNewDir($_POST['new_folder_name']);
 
-    /**
-     * Download file
-     */
-    if (isset($_POST) && $_POST['action'] === 'download') {
+            echo $fm->getJsonResponse();
+        }
 
-        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+        /**
+         * Delete file
+         */
+        if (isset($_POST) && $_POST['action'] === 'unlink') {
 
-        $fm->setAction($_POST['action']);
+            $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
 
-        echo $fm->downloadFile($_POST['filename']);
-    }
+            $fm->setAction($_POST['action']);
+            $fm->deleteFile($_POST['filename']);
 
-    /**
-     * Upload file
-     */
-    if (isset($_POST) && $_POST['action'] === 'upload') {
+            echo $fm->getJsonResponse();
+        }
 
-        $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+        /**
+         * Download file
+         */
+        if (isset($_POST) && $_POST['action'] === 'download') {
 
-        $fm->setAction($_POST['action']);
-        
-        if (isset($_FILES['file'])) $fm->uploadFile();
+            $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+
+            $fm->setAction($_POST['action']);
+
+            echo $fm->downloadFile($_POST['filename']);
+        }
+
+        /**
+         * Upload file
+         */
+        if (isset($_POST) && $_POST['action'] === 'upload') {
+
+            $path === '/' ? $fm->setPath($cwd) : $fm->setPath(($cwd . $path));
+
+            $fm->setAction($_POST['action']);
             
-        echo $fm->getJsonResponse();
+            if (isset($_FILES['file'])) $fm->uploadFile();
+                
+            echo $fm->getJsonResponse();
+        }
     }
+
 
     /**
      * Catch all error
@@ -79,7 +122,9 @@
         $_POST['action'] !== 'cd' &&
         $_POST['action'] !== 'unlink' &&
         $_POST['action'] !== 'download' &&
-        $_POST['action'] !== 'upload'
+        $_POST['action'] !== 'upload' &&
+        $_POST['action'] !== 'login' &&
+        $_POST['action'] !== 'logout'
     ) {
         $data = [ 
             'success' => false,
