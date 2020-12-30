@@ -42,3 +42,12 @@
     <img src="file_explorer/assets/add-folder.png"/>
     <img src="file_explorer/assets/upload-file.png"/>
 </div>
+
+---
+
+### Plain PHP CRUD
+
+<div>
+    <img src="assets/list-employees.png"/>
+    <img src="assets/view-projects.png"/>
+</div>
